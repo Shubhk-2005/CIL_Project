@@ -1,4 +1,7 @@
 import os
+os.environ["KERAS_BACKEND"] = "torch"
+os.environ.setdefault("OMP_NUM_THREADS", "1")
+os.environ.setdefault("MKL_NUM_THREADS", "1")
 import io
 import time
 from typing import List, Optional, Dict, Any
@@ -103,7 +106,7 @@ async def predict_dl(
             content = await file.read()
             return dl_service.predict_image(content, filename=file.filename)
         elif sample_id:
-            sample_path = os.path.join("backend/samples", sample_id)
+            sample_path = os.path.join(SAMPLES_DIR, sample_id)
             if not os.path.exists(sample_path):
                 raise HTTPException(status_code=404, detail="Sample image not found")
             with open(sample_path, "rb") as f:
@@ -141,7 +144,7 @@ async def predict_ensemble(req: EnsemblePredictRequest):
     
     dl_result = None
     if req.sample_image_id:
-        sample_path = os.path.join("backend/samples", req.sample_image_id)
+        sample_path = os.path.join(SAMPLES_DIR, req.sample_image_id)
         if os.path.exists(sample_path):
             with open(sample_path, "rb") as f:
                 dl_result = dl_service.predict_image(f.read(), filename=req.sample_image_id)

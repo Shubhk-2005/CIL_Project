@@ -2,17 +2,22 @@ import React, { useState, useEffect } from 'react';
 import { apiUrl } from '../api';
 import { Cpu, Search, CheckCircle2, AlertTriangle, RefreshCw, Sparkles, Filter, ChevronRight, Info, X, Zap } from 'lucide-react';
 
-export default function MLPredictionView({ initialSymptoms = [], onSelectSymptoms }) {
+export default function MLPredictionView({ initialSymptoms = [], onSelectSymptoms, connectionStatus }) {
   const [metadata, setMetadata] = useState(null);
   const [selectedSymptoms, setSelectedSymptoms] = useState(initialSymptoms);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
   const [prediction, setPrediction] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  useEffect(() => {
+  const loadMetadata = () => {
+    setError(null);
     fetch(apiUrl('/api/ml/features'))
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
       .then(data => {
         setMetadata(data);
         if (initialSymptoms.length > 0) {
@@ -23,8 +28,21 @@ export default function MLPredictionView({ initialSymptoms = [], onSelectSymptom
           triggerPrediction(defaultSymp);
         }
       })
-      .catch(err => console.error('Failed to load ML metadata:', err));
+      .catch(err => {
+        console.error('Failed to load ML metadata:', err);
+        setError(err.message);
+      });
+  };
+
+  useEffect(() => {
+    loadMetadata();
   }, []);
+
+  useEffect(() => {
+    if (connectionStatus === 'connected' && !metadata) {
+      loadMetadata();
+    }
+  }, [connectionStatus, metadata]);
 
   const triggerPrediction = (symptoms) => {
     setLoading(true);
@@ -66,6 +84,22 @@ export default function MLPredictionView({ initialSymptoms = [], onSelectSymptom
     if (onSelectSymptoms) onSelectSymptoms([]);
     triggerPrediction([]);
   };
+
+  if (error && !metadata) {
+    return (
+      <div className="glass-panel" style={{ textAlign: 'center', padding: '40px 24px', maxWidth: '600px', margin: '40px auto' }}>
+        <AlertTriangle size={36} color="#f59e0b" style={{ margin: '0 auto 12px' }} />
+        <h3 style={{ fontSize: '1.1rem', color: '#ffffff', marginBottom: '8px' }}>Waiting for ML Diagnostic Service</h3>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.86rem', marginBottom: '16px' }}>
+          Could not fetch symptom features. The backend might still be waking up from standby on Render.
+        </p>
+        <button onClick={loadMetadata} className="btn btn-primary" style={{ padding: '8px 18px', fontSize: '0.85rem' }}>
+          <RefreshCw size={15} />
+          <span>Retry Connection</span>
+        </button>
+      </div>
+    );
+  }
 
   if (!metadata) {
     return (

@@ -7,7 +7,12 @@
 
 export const API_BASE = (import.meta.env.VITE_API_URL || '').replace(/\/+$/, '');
 
+export const IS_VERCEL_WITHOUT_API = typeof window !== 'undefined' && 
+  window.location.hostname.includes('vercel.app') && 
+  !import.meta.env.VITE_API_URL;
+
 export function apiUrl(endpoint) {
   const clean = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
   return `${API_BASE}${clean}`;
 }
+

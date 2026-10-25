@@ -1,7 +1,7 @@
 import React from 'react';
 import { Cpu, Layers, GitFork, BarChart3, Stethoscope, Sparkles } from 'lucide-react';
 
-export default function Navbar({ activeTab, setActiveTab, systemHealth }) {
+export default function Navbar({ activeTab, setActiveTab, systemHealth, connectionStatus, onRetry }) {
   const tabs = [
     { id: 'comparison', label: 'Tri-Modal Comparator', icon: Sparkles, badge: 'All 3' },
     { id: 'ml', label: '1) ML Symptom Classifier', icon: Cpu, badge: 'Random Forest' },
@@ -9,6 +9,10 @@ export default function Navbar({ activeTab, setActiveTab, systemHealth }) {
     { id: 'rules', label: '3) Simple Rules Engine', icon: GitFork, badge: 'J48 Tree' },
     { id: 'benchmark', label: 'Paradigm Benchmarks', icon: BarChart3, badge: 'Trade-offs' }
   ];
+
+  const isConnected = connectionStatus === 'connected' || !!systemHealth;
+  const isWakingUp = connectionStatus === 'waking_up';
+  const isError = connectionStatus === 'error';
 
   return (
     <header style={{
@@ -62,20 +66,50 @@ export default function Navbar({ activeTab, setActiveTab, systemHealth }) {
             gap: '8px',
             padding: '5px 12px',
             borderRadius: '24px',
-            background: 'rgba(16, 185, 129, 0.1)',
-            border: '1px solid rgba(16, 185, 129, 0.25)',
+            background: isConnected 
+              ? 'rgba(16, 185, 129, 0.1)' 
+              : isWakingUp 
+                ? 'rgba(245, 158, 11, 0.1)' 
+                : 'rgba(239, 68, 68, 0.1)',
+            border: isConnected 
+              ? '1px solid rgba(16, 185, 129, 0.25)' 
+              : isWakingUp 
+                ? '1px solid rgba(245, 158, 11, 0.25)' 
+                : '1px solid rgba(239, 68, 68, 0.25)',
             fontSize: '0.75rem',
-            color: '#34d399'
+            color: isConnected ? '#34d399' : isWakingUp ? '#fbbf24' : '#f87171'
           }}>
             <span style={{
               width: '7px',
               height: '7px',
               borderRadius: '50%',
-              background: '#10b981',
-              boxShadow: '0 0 8px #10b981',
+              background: isConnected ? '#10b981' : isWakingUp ? '#f59e0b' : '#ef4444',
+              boxShadow: isConnected ? '0 0 8px #10b981' : isWakingUp ? '0 0 8px #f59e0b' : '0 0 8px #ef4444',
               display: 'inline-block'
             }} />
-            <span>FastAPI Server Active</span>
+            <span>
+              {isConnected 
+                ? `FastAPI Server Active${systemHealth?.memory?.rss_mb ? ` (${systemHealth.memory.rss_mb} MB)` : ''}`
+                : isWakingUp 
+                  ? 'Waking Up Render Backend...' 
+                  : 'Backend Offline'}
+            </span>
+            {isError && onRetry && (
+              <button
+                onClick={onRetry}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: '#f87171',
+                  cursor: 'pointer',
+                  textDecoration: 'underline',
+                  padding: '0 2px',
+                  fontSize: '0.72rem'
+                }}
+              >
+                Retry
+              </button>
+            )}
           </div>
         </div>
       </div>

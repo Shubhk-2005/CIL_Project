@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { apiUrl } from '../api';
 import { Layers, UploadCloud, Eye, Sliders, AlertCircle, CheckCircle, RefreshCw, Activity, Image as ImageIcon, Info, ChevronDown, ChevronUp } from 'lucide-react';
 
-export default function DLPredictionView({ initialSample = 'sample_pneumonia.jpg', onPredictionUpdate }) {
+export default function DLPredictionView({ initialSample = 'sample_pneumonia.jpg', onPredictionUpdate, connectionStatus }) {
   const [samples, setSamples] = useState([]);
   const [modelInfo, setModelInfo] = useState(null);
   const [selectedSample, setSelectedSample] = useState(initialSample);
@@ -12,10 +12,15 @@ export default function DLPredictionView({ initialSample = 'sample_pneumonia.jpg
   const [prediction, setPrediction] = useState(null);
   const [loading, setLoading] = useState(false);
   const [showLayers, setShowLayers] = useState(false);
+  const [fetchError, setFetchError] = useState(null);
 
-  useEffect(() => {
+  const loadSamplesAndInfo = () => {
+    setFetchError(null);
     fetch(apiUrl('/api/dl/samples'))
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
       .then(data => {
         setSamples(data);
         if (data.length > 0 && !selectedSample) {
@@ -25,13 +30,29 @@ export default function DLPredictionView({ initialSample = 'sample_pneumonia.jpg
           runSamplePrediction(selectedSample);
         }
       })
-      .catch(err => console.error('Failed to load DL samples:', err));
+      .catch(err => {
+        console.error('Failed to load DL samples:', err);
+        setFetchError('Failed to load radiograph samples. Service may be starting.');
+      });
 
     fetch(apiUrl('/api/dl/info'))
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
       .then(data => setModelInfo(data))
       .catch(err => console.error('Failed to load DL model info:', err));
+  };
+
+  useEffect(() => {
+    loadSamplesAndInfo();
   }, []);
+
+  useEffect(() => {
+    if (connectionStatus === 'connected' && samples.length === 0) {
+      loadSamplesAndInfo();
+    }
+  }, [connectionStatus, samples.length]);
 
   const runSamplePrediction = (sampleId) => {
     setLoading(true);
@@ -46,7 +67,10 @@ export default function DLPredictionView({ initialSample = 'sample_pneumonia.jpg
       method: 'POST',
       body: formData
     })
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
       .then(data => {
         setPrediction(data);
         setLoading(false);

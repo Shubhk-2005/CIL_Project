@@ -29,7 +29,7 @@ if [ ! -d "frontend/dist" ] || [ ! -f "frontend/dist/index.html" ]; then
 fi
 
 # 3. Start unified FastAPI + React server on port 8000
-PORT="${PORT:-8000}"
+PORT="${PORT:-8001}"
 echo "🚀 Starting Unified Application Server at http://localhost:$PORT"
 echo "   - React Frontend: http://localhost:$PORT"
 echo "   - FastAPI Swagger Docs: http://localhost:$PORT/docs"

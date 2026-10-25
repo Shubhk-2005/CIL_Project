@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { apiUrl } from '../api';
 import { GitFork, CheckCircle2, ArrowRight, Zap, RefreshCw, FileText, Image as ImageIcon, ShieldCheck, Info } from 'lucide-react';
 
-export default function RulesPredictionView({ initialInputs, onInputsChange }) {
+export default function RulesPredictionView({ initialInputs, onInputsChange, connectionStatus }) {
   const [metadata, setMetadata] = useState(null);
   const [inputs, setInputs] = useState(initialInputs || {
     dyspnea: 'yes',
@@ -14,15 +14,28 @@ export default function RulesPredictionView({ initialInputs, onInputsChange }) {
   const [loading, setLoading] = useState(false);
   const [showOriginalImage, setShowOriginalImage] = useState(false);
 
-  useEffect(() => {
+  const loadRulesData = () => {
     fetch(apiUrl('/api/rules/info'))
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
       .then(data => {
         setMetadata(data);
         evaluateRules(inputs);
       })
       .catch(err => console.error('Failed to load rules metadata:', err));
+  };
+
+  useEffect(() => {
+    loadRulesData();
   }, []);
+
+  useEffect(() => {
+    if (connectionStatus === 'connected' && !metadata) {
+      loadRulesData();
+    }
+  }, [connectionStatus, metadata]);
 
   const evaluateRules = (currentInputs) => {
     setLoading(true);

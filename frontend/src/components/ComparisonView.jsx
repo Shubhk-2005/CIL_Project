@@ -61,32 +61,45 @@ const SCENARIOS = [
   }
 ];
 
-export default function ComparisonView({ onNavigateTab }) {
+export default function ComparisonView({ onNavigateTab, connectionStatus }) {
   const [selectedScenario, setSelectedScenario] = useState(SCENARIOS[0].id);
   const [ensembleData, setEnsembleData] = useState(null);
   const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    runEnsemble(SCENARIOS[0].data);
-  }, []);
+  const [error, setError] = useState(null);
 
   const runEnsemble = (scenarioData) => {
     setLoading(true);
+    setError(null);
     fetch(apiUrl('/api/ensemble/predict'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(scenarioData)
     })
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
       .then(data => {
         setEnsembleData(data);
         setLoading(false);
       })
       .catch(err => {
         console.error('Ensemble evaluation failed:', err);
+        setError(err.message);
         setLoading(false);
       });
   };
+
+  useEffect(() => {
+    runEnsemble(SCENARIOS[0].data);
+  }, []);
+
+  useEffect(() => {
+    if (connectionStatus === 'connected' && !ensembleData) {
+      const scen = SCENARIOS.find(s => s.id === selectedScenario);
+      if (scen) runEnsemble(scen.data);
+    }
+  }, [connectionStatus, ensembleData, selectedScenario]);
 
   const handleScenarioChange = (scenarioId) => {
     setSelectedScenario(scenarioId);
