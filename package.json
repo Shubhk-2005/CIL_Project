@@ -1,0 +1,12 @@
+{
+  "name": "clinical-trimodal-ai",
+  "version": "1.0.0",
+  "description": "Clinical Diagnostic Dashboard: ML vs DL vs Simple Rules",
+  "scripts": {
+    "start": "./run.sh",
+    "run": "./run.sh",
+    "build": "cd frontend && npm run build",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:backend": "python3 -m uvicorn backend.app:app --reload --port 8000"
+  }
+}
